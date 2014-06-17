@@ -445,11 +445,11 @@ void _main (int _argc, char **_argv, char **_envp) {
 	bzero(stdin, sizeof(FILE));	// but we cleared out again - safe is safe (paranoia???)
 	FILE_SET_HANDLE(stdin, 0);
 	stdout = &_StdOutF;
-	bzero(stdin, sizeof(FILE));
-	FILE_SET_HANDLE(stdin, 1);
+	bzero(stdout, sizeof(FILE));
+	FILE_SET_HANDLE(stdout, 1);
 	stderr = &_StdErrF;
-	bzero(stdin, sizeof(FILE));
-	FILE_SET_HANDLE(stdin, 2);
+	bzero(stderr, sizeof(FILE));
+	FILE_SET_HANDLE(stderr, 2);
 
 	exit(main(_argc, _argv, _envp));
 }
