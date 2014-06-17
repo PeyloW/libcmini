@@ -11,6 +11,7 @@ endif
 #
 ONLY_68K=N
 BUILD_CF=N
+BUILD_FAST=Y
 MINTLIB_COMAPTIBLE=N
 COMPILE_ELF=N
 STDIO_WITH_LONG_LONG=N
@@ -61,10 +62,18 @@ SRCDIR=sources
 ifeq ($(ONLY_68K),Y)
 LIBDIRS=.
 else
+ifeq ($(BUILD_FAST), Y)
 ifeq ($(BUILD_CF),Y)
 LIBDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort ./mfastcall ./m68020-60/mfastcall ./m5475/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall ./m5475/mshort/mfastcall
 else
 LIBDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort ./mfastcall ./m68020-60/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall
+endif
+else
+ifeq ($(BUILD_CF),Y)
+LIBDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort
+else
+LIBDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort
+endif
 endif
 endif
 OBJDIRS=$(patsubst %,%/objs,$(LIBDIRS))
@@ -105,15 +114,19 @@ clean:
 m68020-60/%.a m68020-60/startup.o: CFLAGS += -m68020-60
 mshort/%.a mshort/startup.o: CFLAGS += -mshort
 m68020-60/mshort/%.a m68020-60/mshort/startup.o: CFLAGS += -m68020-60 -mshort
+ifeq ($(BUILD_FAST), Y)
 mfastcall/%.a mfastcall/startup.o: CFLAGS +=  -mfastcall
 m68020-60/mfastcall/%.a m68020-60/mfastcall/startup.o: CFLAGS += -m68020-60 -mfastcall
 mshort/mfastcall/%.a mshort/mfastcall/startup.o: CFLAGS += -mshort -mfastcall
 m68020-60/mshort/mfastcall/%.a m68020-60/mshort/mfastcall/startup.o: CFLAGS += -m68020-60 -mshort -mfastcall
+endif
 ifeq ($(BUILD_CF),Y)
 m5475/%.a m5475/startup.o: CFLAGS += -mcpu=5475
 m5475/mshort/%.a m5475/mshort/startup.o: CFLAGS += -mcpu=5475 -mshort
+ifeq ($(BUILD_FAST), Y)
 m5475/mfastcall/%.a m5475/mfastcall/startup.o: CFLAGS += -mcpu=5475 -mfastcall
 m5475/mshort/mfastcall/%.a m5475/mshort/mfastcall/startup.o: CFLAGS += -mcpu=5475 -mshort -mfastcall
+endif
 endif
 
 #

@@ -9,6 +9,7 @@ CFLAGS=\
 	-mcpu=68000\
 	-fomit-frame-pointer\
 	-Os\
+	-mfastcall\
 	$(INCLUDE)
 	
 ifneq ($(DEVKITMINT),) 
