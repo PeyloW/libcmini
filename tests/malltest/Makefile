@@ -3,6 +3,7 @@ CROSS=Y
 CROSSBINDIR_IS_Y=m68k-atari-mint-
 CROSSBINDIR_IS_N=
 
+BUILD_CF=N
 BUILD_FAST=Y
 
 CROSSBINDIR=$(CROSSBINDIR_IS_$(CROSS))
@@ -51,9 +52,17 @@ AOBJS=$(patsubst $(SRCDIR)/%.o,%.o,$(patsubst %.S,%.o,$(ASRCS)))
 OBJS=$(COBJS) $(AOBJS)
 
 ifeq ($(BUILD_FAST), Y)
+ifeq ($(BUILD_CF), Y)
 TRGTDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort ./mfastcall ./m68020-60/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall
 else
+TRGTDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort ./mfastcall ./m68020-60/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall
+endif
+else
+ifeq ($(BUILD_CF), Y)
 TRGTDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort
+else
+TRGTDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort
+endif
 endif
 
 OBJDIRS=$(patsubst %,%/objs,$(TRGTDIRS))
@@ -62,10 +71,12 @@ OBJDIRS=$(patsubst %,%/objs,$(TRGTDIRS))
 # multilib flags. These must match m68k-atari-mint-gcc -print-multi-lib output
 #
 m68020-60/$(APP):CFLAGS += -m68020-60
-m5475/$(APP):CFLAGS += -mcpu=5475
 mshort/$(APP):CFLAGS += -mshort
 m68020-60/mshort/$(APP): CFLAGS += -m68020-60 -mshort
+ifeq ($(BUILD_CF), Y)
+m5475/$(APP):CFLAGS += -mcpu=5475
 m5475/mshort/$(APP): CFLAGS += -mcpu=5475 -mshort
+endif
 ifeq ($(BUILD_FAST), Y)
 mfastcall/$(APP):CFLAGS += -mfastcall
 m68020-60/mfastcall/$(APP):CFLAGS += -m68020-60 -mfastcall

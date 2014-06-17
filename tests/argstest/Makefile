@@ -3,6 +3,7 @@ CROSS=Y
 CROSSBINDIR_IS_Y=m68k-atari-mint-
 CROSSBINDIR_IS_N=
 
+BUILD_CF=N
 BUILD_FAST=Y
 
 CROSSBINDIR=$(CROSSBINDIR_IS_$(CROSS))
@@ -50,9 +51,17 @@ AOBJS=$(patsubst $(SRCDIR)/%.o,%.o,$(patsubst %.S,%.o,$(ASRCS)))
 OBJS=$(COBJS) $(AOBJS)
 
 ifeq ($(BUILD_FAST), Y)
+ifeq ($(BUILD_CF), Y)
 TRGTDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort ./mfastcall ./m68020-60/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall
 else
+TRGTDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort ./mfastcall ./m68020-60/mfastcall ./mshort/mfastcall ./m68020-60/mshort/mfastcall
+endif
+else
+ifeq ($(BUILD_CF), Y)
 TRGTDIRS=. ./m68020-60 ./m5475 ./mshort ./m68020-60/mshort ./m5475/mshort
+else
+TRGTDIRS=. ./m68020-60 ./mshort ./m68020-60/mshort
+endif
 endif
 OBJDIRS=$(patsubst %,%/objs,$(TRGTDIRS))
 
