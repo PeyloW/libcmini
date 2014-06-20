@@ -2,6 +2,7 @@
 #define _EXT_H_
 
 #include <time.h>
+#include <stddef.h>
 
 extern int __text, __data, __bss;
 #define _text &__text
@@ -90,6 +91,7 @@ struct dfree
         unsigned df_sclus;
 };
 
+size_t      malloc_size(const void *ptr);
 
 int         getcurdir( int drive, char *path );
 char        *getcwd( char *buffer, int bufflen );
