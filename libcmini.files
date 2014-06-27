@@ -44,6 +44,7 @@ sources/malloc.c
 sources/memcmp.c
 sources/memcpy.c
 sources/memset.c
+sources/mktime.c
 sources/printf.c
 sources/putc.c
 sources/puts.c
