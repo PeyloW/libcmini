@@ -37,7 +37,8 @@ TEST_APP=$(APP)
 CFLAGS=\
 	-Os\
 	-g\
-	-Wall
+	-Wall\
+	-fomit-frame-pointer
 	
 SRCDIR=sources
 INCDIR=include
