@@ -26,7 +26,15 @@ int atexit(void (*func)(void));
 extern void exit(int status);
 extern void abort(void);
 
-extern void srand48(long int seedval);
+#ifdef __MSHORT__
+#define	RAND_MAX (0x7FFF)
+#else
+#define	RAND_MAX (0x7FFFFFFFL)
+#endif
+
+extern int rand(void);
+extern long lrand(void);
+extern void srand48(unsigned int seed);
 
 extern long strtol(const char*, char**, int);
 extern unsigned long strtoul(const char*, char**, int);
