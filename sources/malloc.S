@@ -119,9 +119,15 @@ _malloc:
 #endif
 	cmp.l #1024,%d0                             ; 16
 	jhi .islarge                                ; 8/12
+#ifdef __mcoldfire__
+	and.l #-2,%d0
+	move.w ___small_index_for_size(pc,d0.w),%a1
+	lea ___small_mem_chunks(pc,a1.l),%a1
+#else
 	and.w #-2,%d0                               ;  8
 	move.w ___small_index_for_size(pc,d0.w),%d0 ; 16
 	lea ___small_mem_chunks(pc,d0.w),%a1        ; 16
+#endif
 	move.l (%a1),%d2                            ;  8
 	jeq .nosmallfree                            ; 8/12
     move.l d2,a0                                ;  4
@@ -137,7 +143,11 @@ _malloc:
 .islarge:
 	jsr ___large_malloc
 .testsuccess:
+#ifdef __mcoldfire__
+	cmp.l #0,%a0
+#else
 	cmp.w #0,%a0
+#endif
 	jeq .iserror
     rts
 .iserror:
@@ -155,7 +165,11 @@ _free:
 #ifndef __FASTCALL__
     move.l 4(sp),a0
 #endif
+#ifdef __mcoldfire__
+	cmp.l #0,%a0
+#else
 	cmp.w #0,%a0                            ; 12
+#endif
 	jeq .isnull                             ; 8/12
 	move.l -(%a0),%d0                       ; 16
 	moveq #47,%d1                           ;  4
@@ -176,13 +190,17 @@ _malloc_size:
 #ifndef __FASTCALL__
     move.l 4(sp),a0
 #endif
+#ifdef __mcoldfire__
+	cmp.l #0,%a0
+#else
 	cmp.w #0,%a0                                  ; 12
+#endif
 	jeq .isnull                                   ; 8/16
 	move.l -(%a0),%d0                             ; 16
 	moveq #47,%d1                                 ;  4
 	cmp.l %d0,%d1                                 ;  8
 	jcs .islarge                                  ; 8/16
-	move.w ___small_size_for_indexes(pc,d0.w),%d0 ; 16
+	move.w ___small_size_for_indexes(pc,d0.l),%d0 ; 16
 	ext.l %d0                                     ;  4
 	rts                                           ; 16 = 92clk
 .isnull:
