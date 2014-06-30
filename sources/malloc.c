@@ -7,16 +7,45 @@
  *  Use fast path for allocating blocks of 1024 bytes or less, otherwise trust
  *  the OS to be reasonable.
  */
-#include <stddef.h>	/* for size_t */
+#include <stddef.h> /* for size_t */
 #include <osbind.h> /* for Malloc/Mfree on target */
-#include <string.h> /* for memcpy */
-#include <errno.h> /* for errno and ENOMEM */
+#include <stdlib.h> /* for NULL */
+#include <errno.h>  /* for errno and ENOMEM */
 
 typedef struct {
   void*  next;
   size_t size;
 } __mem_chunk;
 
+#define __BLOCK_START(b)	(((void*)(b))-sizeof(__mem_chunk))
+#define __BLOCK_RET(b)	(((void*)(b))+sizeof(__mem_chunk))
+#define __MEM_ALIGN_SIZE	  16
+#define __MEM_ALIGN(s)	(((s)+__MEM_ALIGN_SIZE-1)&(unsigned long)(~(__MEM_ALIGN_SIZE-1)))
+
+//#ifndef __DEV_MALLOC__
+
+void *large_malloc(size_t size) {
+  register __mem_chunk* ptr;
+  register size_t need = __MEM_ALIGN(size+sizeof(__mem_chunk));
+  ptr = (void *)Malloc(need);
+  if (ptr) {
+    ptr->size = size;
+  } 
+  else {
+    errno = ENOMEM;
+  }
+  return __BLOCK_RET(ptr);
+}
+
+void large_free(void* ptr) {
+  __mem_chunk* tmp = __BLOCK_START(ptr);
+  Mfree(tmp);
+}
+
+//#else
+
+//extern void *large_malloc(size_t size);
+//void large_free(void* ptr);
 
 /*
  * Defines for fast path blocks for allocs of 1024 bytes and less. Uses block
@@ -24,7 +53,6 @@ typedef struct {
  */
 #define __MAX_INDEX (12 * 4)
 #define __MEM_BLOCK_SIZE	4096
-#define __MEM_ALIGN_SIZE	  16
 #define __MIN_SMALL_SIZE	   8
 #define __MAX_SMALL_SIZE	1024
 static const short __small_size_for_indexes[__MAX_INDEX / 2] = {8,0,16,0,32,0,64,0,128,0,256,0,384,0,512,0,640,0,768,0,896,0,1024,0};
@@ -35,27 +63,21 @@ static __mem_chunk* __small_mem_chunks[__MAX_INDEX / 4]; /* first free chunk for
 static void* __init_small_chunks(short idx, size_t size);
 static void* (*__alloc_small_chunks)(short idx, size_t size) = &__init_small_chunks;
 
-
-#define __BLOCK_START(b)	(((void*)(b))-sizeof(__mem_chunk))
-#define __BLOCK_RET(b)	(((void*)(b))+sizeof(__mem_chunk))
-#define __MEM_ALIGN(s)	(((s)+__MEM_ALIGN_SIZE-1)&(unsigned long)(~(__MEM_ALIGN_SIZE-1)))
-
 #define __SMALL_SIZE_FOR_INDEX(idx) (*((short*)(((char *)__small_size_for_indexes)+idx)))
 #define __SMALL_CHUNK_FOR_INDEX(idx) (*((__mem_chunk**)(((char *)__small_mem_chunks)+idx)))
 
 __attribute__ ((noinline))
 static void*  __real_alloc_small_chunks(short idx, size_t size) {
   register short step = __SMALL_SIZE_FOR_INDEX(idx)+sizeof(__mem_chunk);
-  register short i;
-  register short nr = (__MEM_BLOCK_SIZE / ((short)step)) - 1;
+  register short count = (__MEM_BLOCK_SIZE / ((short)step));
   register __mem_chunk *ptr;
   
-  ptr = (void*)Malloc(step * nr);
+  ptr = (void*)Malloc(step * count);
   if (!ptr) return NULL;
   
   __SMALL_CHUNK_FOR_INDEX(idx) = ptr;
   
-  for (i = 0; i < nr; i++) {
+  while (count--) {
     ptr->size = idx;
     ptr = ptr->next = (((void*)ptr)+step);
   }
@@ -94,47 +116,12 @@ static void* __small_malloc(size_t size) {
   }  
 }
 
-__attribute__ ((noinline))
-static void* __large_malloc(size_t size) {
-  register __mem_chunk* ptr;
-  register size_t need = __MEM_ALIGN(size+sizeof(__mem_chunk));
-  ptr = (void *)Malloc(need);
-  if (ptr) {
-    ptr->size = size;
-  }
-  return ptr;
-}
-
-void* malloc(size_t size) {
-  register __mem_chunk* ptr;
-  if (size) {
-    if (size <= __MAX_SMALL_SIZE) {
-      ptr = __small_malloc(size);
-    }
-    else {
-      ptr = __large_malloc(size);
-    }
-    if (ptr) {
-      return __BLOCK_RET(ptr);
-    }
-err_out:
-    errno = ENOMEM;
-  }
-  return NULL;
-}
-
 __attribute__ ((always_inline))
 static void __small_free(void* ptr) {
   __mem_chunk* tmp = __BLOCK_START(ptr);
   short idx = tmp->size;
   tmp->next = __SMALL_CHUNK_FOR_INDEX(idx);
   __SMALL_CHUNK_FOR_INDEX(idx) = tmp;
-}
-
-__attribute__ ((noinline))
-static void __large_free(void* ptr) {
-  __mem_chunk* tmp = __BLOCK_START(ptr);
-  Mfree(tmp);
 }
 
 void free(void *ptr) {
@@ -144,9 +131,27 @@ void free(void *ptr) {
       __small_free(ptr);
     }
     else {
-      __large_free(ptr);
+      large_free(ptr);
     }
   }
+}
+
+void* malloc(size_t size) {
+  register __mem_chunk* ptr;
+  if (size) {
+    if (size <= __MAX_SMALL_SIZE) {
+      ptr = __small_malloc(size);
+    }
+    else {
+      return large_malloc(size);
+    }
+    if (ptr) {
+      return __BLOCK_RET(ptr);
+    }
+err_out:
+    errno = ENOMEM;
+  }
+  return NULL;
 }
 
 size_t malloc_size(const void *ptr) {
@@ -160,3 +165,5 @@ size_t malloc_size(const void *ptr) {
   }
   return 0;
 }
+
+//#endif

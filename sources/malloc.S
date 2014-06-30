@@ -1,148 +1,161 @@
 #NO_APP
 	.text
 	.even
-___real_alloc_small_chunks:
-	movem.l #6168,-(%sp)
-	move.w %d0,%a3
-	lea ___small_size_for_indexes,%a0
-	move.w (%a0,%a3.l),%d3
-	addq.w #8,%d3
-	move.w #4096,%d4
-	ext.l %d4
-	divs.w %d3,%d4
-	subq.w #1,%d4
-	move.w %d3,%d0
-	muls.w %d4,%d0
-	move.w %d0,%a4
-#APP
-| 53 "malloc.c" 1
-	movl	%a4,sp@-
-	movw	#72,sp@-
-	trap	#1
-	addql	#6,sp
-| 0 "" 2
-#NO_APP
-	move.l %d0,%a0
-	tst.l %d0
-	jeq .L2
-	lea ___small_mem_chunks,%a1
-	move.l %d0,(%a1,%a3.l)
-	clr.w %d0
-	move.w %d3,%a1
-	jra .L3
-.L4:
-	move.l %a0,%d1
-	add.l %a1,%d1
-	move.l %d1,(%a0)
-	addq.w #1,%d0
-	move.l %d1,%a0
-.L3:
-	move.l %a3,4(%a0)
-	cmp.w %d0,%d4
-	jgt .L4
-	clr.l (%a0)
-.L2:
-	movem.l (%sp)+,#6168
-	rts
-	.even
+; Only called internaly, so use fastcall arg-conventions, but store regs normally.
 ___init_small_chunks:
-	move.l %d3,-(%sp)
+#ifndef __FASTCALL__
+	move.l %d2,-(%sp)
+#endif
 	move.l #___real_alloc_small_chunks,___alloc_small_chunks
-	clr.w %d2
-	lea ___small_size_for_indexes,%a2
-	lea ___small_index_for_size,%a1
-.L7:
-	cmp.w (%a2,%d0.w),%d2
-	jle .L6
+	moveq.l #0,%d2
+#ifdef __mcoldfire__
+	lea ___small_size_for_indexes-2(%pc),%a0
+#else
+	lea ___small_size_for_indexes(%pc),%a0
+#endif
+	lea ___small_index_for_size(%pc),%a1
+.forloop:
+#ifdef __mcoldfire__
+	cmp.l (%a0),%d2
+#else
+	cmp.w (%a0),%d2
+#endif
+	jle .noidxinc
+    addq.l #4,%a0
+#ifdef __mcoldfire__
+	addq.l #4,%d0
+.noidxinc:
+	move.w %d0,(%a1)+
+	addq.l #2,%d2
+	cmp.l #1026,%d2
+#else
 	addq.w #4,%d0
-.L6:
-	move.w %d2,%d3
-	asr.w #1,%d3
-	move.w %d3,%a0
-	add.l %a0,%a0
-	move.w %d0,(%a0,%a1.l)
+.noidxinc:
+	move.w %d0,(%a1)+
 	addq.w #2,%d2
 	cmp.w #1026,%d2
-	jne .L7
+#endif
+	jne .forloop
 	moveq #-2,%d0
+#ifdef __mcoldfire__
 	and.l %d1,%d0
-	lea ___small_index_for_size,%a0
-	move.w (%a0,%d0.l),%d0
-	move.l (%sp)+,%d3
-	jra ___real_alloc_small_chunks
-	.even
-___large_malloc:
-	move.l %d3,-(%sp)
-	move.l %d0,%d3
-	moveq #23,%d0
-	add.l %d3,%d0
-	moveq #-16,%d1
-	and.l %d1,%d0
-#APP
-| 101 "malloc.c" 1
-	movl	%d0,sp@-
-	movw	#72,sp@-
+	move.w ___small_index_for_size(%pc,%d0.l),%d0
+#else
+	and.w %d1,%d0
+	move.w ___small_index_for_size(%pc,%d0.w),%a0
+    move.l %a0,d0
+#endif
+#ifndef __FASTCALL__
+	move.l (%sp)+,%d2
+#endif
+;
+; intentional fallthrough!
+; Only called internaly, so use fastcall arg-conventions, but store regs normally.
+___real_alloc_small_chunks:
+#ifndef __FASTCALL__
+    move.l  %d2,-(%sp)
+    move.l  %a2,-(%sp)
+#endif
+#ifdef __mcoldfire__
+	move.l ___small_size_for_indexes-2(%pc,%d0.w),%d1
+	addq.l #8,%d1     ; d1=step
+#else
+	move.w ___small_size_for_indexes(%pc,%d0.w),%d1
+	addq.w #8,%d1     ; d1=step
+#endif
+	move.l #4096+32,%d2
+	divs.w %d1,%d2    ; d2=count
+#ifdef __mcoldfire__
+    lea -12(%sp),%sp
+    movem.l %d0-%d2,(%sp)
+#else
+    movem.w %d0-%d2,-(%sp)
+#endif
+    mulu.w %d1,%d2
+	movl	%d2,-(sp)
+	movw	#72,-(sp)
 	trap	#1
-	addql	#6,sp
-| 0 "" 2
-#NO_APP
-	move.l %d0,%a0
-	tst.l %d0
-	jeq .L10
-	move.l %d3,4(%a0)
-.L10:
-	move.l (%sp)+,%d3
-	rts
-	.even
-___large_free:
-	move.l %a0,%d0
-	subq.l #8,%d0
-#APP
-| 137 "malloc.c" 1
-	movl	%d0,sp@-
-	movw	#73,sp@-
-	trap	#1
-	addql	#6,sp
-| 0 "" 2
-#NO_APP
+	addql	#6,%sp
+    move.l  %d0,%a0   ; a0=ptr
+#ifdef __mcoldfire__
+    movem.l (%sp),%d0-%d2
+	lea  12(%sp),%sp
+#else
+    movem.w (%sp)+,%d0-%d2
+	cmp.w #0,%d0
+#endif
+	jeq .nomem
+	lea ___small_mem_chunks(%pc),%a1
+    ext.l %d0
+	move.l %a0,(%a1,%d0.l)
+#ifdef __mcoldfire__
+    subq.l  #2,%d2
+#else
+    subq.w  #2,%d2
+#endif
+.forloop:
+#ifdef __mcoldfire__
+    lea (%a0,%d1.l),%a1
+#else
+    lea (%a0,%d1.w),%a1
+#endif
+    move.l %a1,(%a0)+
+    move.l %d0,(%a0)
+    move.l %a1,%a0
+#ifdef __mcoldfire__
+    subq.l #1,d2
+    jge .forloop
+#else
+    dbra  %d2,.forloop
+#endif
+    clr.l (%a0)
+    move.l %d0,4(%a0)
+.nomem:
+#ifndef __FASTCALL__
+    move.l  (%sp)+,%a2
+    move.l  (%sp)+,%d2
+#endif
 	rts
 	.even
 	.globl	_malloc
 _malloc:
 #ifndef __FASTCALL__
-    move.l 4(sp),d0                             ; 12
-	jeq .iszero                                 ; 8/12
-    move.l d0,d1                                ; 4
-#else
+    move.l 4(%sp),%d0                             ; 12
+#endif
 	move.l %d0,%d1                              ;  4
 	jeq .iszero                                 ; 8/12
-#endif
 	cmp.l #1024,%d0                             ; 16
 	jhi .islarge                                ; 8/12
 #ifdef __mcoldfire__
 	and.l #-2,%d0
-	move.w ___small_index_for_size(pc,d0.w),%a1
-	lea ___small_mem_chunks(pc,a1.l),%a1
+	move.w ___small_index_for_size(%pc,%d0.w),%a1
+	lea ___small_mem_chunks(%pc,%a1.l),%a1
 #else
 	and.w #-2,%d0                               ;  8
-	move.w ___small_index_for_size(pc,d0.w),%d0 ; 16
-	lea ___small_mem_chunks(pc,d0.w),%a1        ; 16
+	move.w ___small_index_for_size(%pc,d0.w),%d0 ; 16
+	lea ___small_mem_chunks(%pc,%d0.w),%a1      ; 16
 #endif
+#ifndef __FASTCALL__
+    move.l (%a1),%a0                            ;  8
+#ifdef __mcoldfire__
+    cmp.l #0,%a0
+#else
+    cmp.w #0,%a0                                 ; 12
+#endif
+	jeq .nosmallfree                            ; 8/12
+#else
 	move.l (%a1),%d2                            ;  8
 	jeq .nosmallfree                            ; 8/12
-    move.l d2,a0                                ;  4
+    move.l %d2,%a0                              ;  4
+#endif
 	move.l (%a0),(%a1)                          ; 20
     moveq.l #0,d0                               ;  4
-	move.l d0,(%a0)                             ; 12
+	move.l %d0,(%a0)                            ; 12
 	addq.l #8,%a0                               ;  8
 	rts                                         ; 16 = 156clc
 .nosmallfree:
-	move.l ___alloc_small_chunks,%a0
-	jsr (%a0)
-	jra .testsuccess
-.islarge:
-	jsr ___large_malloc
-.testsuccess:
+	move.l ___alloc_small_chunks(%pc),%a0       ; 16
+	jsr (%a0)                                   ; 16
 #ifdef __mcoldfire__
 	cmp.l #0,%a0
 #else
@@ -154,16 +167,18 @@ _malloc:
 	move.w #39,_errno
 .iszero:
 #ifndef __FASTCALL__
-    moveq.l #0,d0
+    moveq.l #0,%d0
 #else
 	sub.l %a0,%a0
 #endif
 	rts
+.islarge:
+	jra _large_malloc
 	.even
 	.globl	_free
 _free:
 #ifndef __FASTCALL__
-    move.l 4(sp),a0
+    move.l 4(%sp),a0
 #endif
 #ifdef __mcoldfire__
 	cmp.l #0,%a0
@@ -175,20 +190,22 @@ _free:
 	moveq #47,%d1                           ;  4
 	cmp.l %d0,%d1                           ;  8
 	jcs .islarge                            ; 8/12
-	move.l ___small_mem_chunks(pc,d0.w),%a1 ; 20
+	move.l ___small_mem_chunks(%pc,d0.w),%a1 ; 20
 	move.l (%a1),-(%a0)                     ; 20
 	move.l %a0,(%a1)                        ; 12
 	rts                                     ; 16 = 124clk
 .islarge:
-    addq.l  #4,a0
-	jra ___large_free
+#ifdef __FASTCALL__
+    addq.l  #4,%a0
+#endif
+	jra _large_free
 .isnull:
 	rts
 	.even
 	.globl	_malloc_size
 _malloc_size:
 #ifndef __FASTCALL__
-    move.l 4(sp),a0
+    move.l 4(%sp),a0
 #endif
 #ifdef __mcoldfire__
 	cmp.l #0,%a0
@@ -200,21 +217,21 @@ _malloc_size:
 	moveq #47,%d1                                 ;  4
 	cmp.l %d0,%d1                                 ;  8
 	jcs .islarge                                  ; 8/16
-	move.w ___small_size_for_indexes(pc,d0.l),%d0 ; 16
+	move.w ___small_size_for_indexes(%pc,%d0.l),%d0 ; 16
 	ext.l %d0                                     ;  4
 	rts                                           ; 16 = 92clk
 .isnull:
 	moveq #0,%d0
 .islarge:
 	rts
-.lcomm ___small_index_for_size,1026
 .lcomm ___small_mem_chunks,48
-	.data
+.lcomm ___small_index_for_size,1026
 	.even
 ___alloc_small_chunks:
 	.long	___init_small_chunks
-	.text
 	.even
+	.word	0
+	.word	0
 ___small_size_for_indexes:
 	.word	8
 	.word	0
@@ -240,3 +257,4 @@ ___small_size_for_indexes:
 	.word	0
 	.word	1024
 	.word	0
+
