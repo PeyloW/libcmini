@@ -22,7 +22,7 @@ typedef struct {
 #define __MEM_ALIGN_SIZE	  16
 #define __MEM_ALIGN(s)	(((s)+__MEM_ALIGN_SIZE-1)&(unsigned long)(~(__MEM_ALIGN_SIZE-1)))
 
-//#ifndef __DEV_MALLOC__
+#ifndef __DEV_MALLOC__
 
 void *large_malloc(size_t size) {
   register __mem_chunk* ptr;
@@ -42,10 +42,10 @@ void large_free(void* ptr) {
   Mfree(tmp);
 }
 
-//#else
+#else
 
-//extern void *large_malloc(size_t size);
-//void large_free(void* ptr);
+extern void *large_malloc(size_t size);
+void large_free(void* ptr);
 
 /*
  * Defines for fast path blocks for allocs of 1024 bytes and less. Uses block
@@ -148,7 +148,6 @@ void* malloc(size_t size) {
     if (ptr) {
       return __BLOCK_RET(ptr);
     }
-err_out:
     errno = ENOMEM;
   }
   return NULL;
@@ -166,4 +165,4 @@ size_t malloc_size(const void *ptr) {
   return 0;
 }
 
-//#endif
+#endif

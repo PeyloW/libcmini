@@ -32,12 +32,8 @@ void recursive_alloc(int depth)
 	}
 }
 
-int main(int argc, char *argv[], char *envp[])
-{
+void large_alloc() {
 	char *ptr1, *ptr2, *ptr3;
-
-	while (Cconis()) Cconin();
-
 	printf("Allocating 256 kBytes:");
 	ptr1 = malloc(256 * 1024L);
 	printf(" ptr = %p\r\n", ptr1);
@@ -58,7 +54,29 @@ int main(int argc, char *argv[], char *envp[])
 	free(ptr2);
 	free(ptr1);
 	free(ptr3);
+}
 
+void small_alloc(size_t size, int count) {
+	int i;
+	void *ptrs[count];
+	for (i = 0; i < count; i++) {
+		ptrs[i] = malloc(size);
+	}
+	for (i = 0; i < count; i++) {
+		free(ptrs[i]);
+	}
+}
+
+int main(int argc, char *argv[], char *envp[])
+{
+	while (Cconis()) Cconin();
+
+	small_alloc(8, 1);
+	small_alloc(9, 1);
+	small_alloc(1024, 5);
+
+	large_alloc();
+	
 	(void) Cconws("press any key to continue\r\n");
 	Cconin();
 	recursive_alloc(50);
