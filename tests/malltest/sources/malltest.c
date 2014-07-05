@@ -50,13 +50,13 @@ void large_alloc() {
 	ptr3 = malloc(8192);
 	printf(" ptr = %p\r\n", ptr3);
 
-
 	free(ptr2);
 	free(ptr1);
 	free(ptr3);
 }
 
 void small_alloc(size_t size, int count) {
+	printf("Allocating %d x %d Bytes\r\n", count, (int)size);
 	int i;
 	void *ptrs[count];
 	for (i = 0; i < count; i++) {
@@ -73,7 +73,7 @@ int main(int argc, char *argv[], char *envp[])
 
 	small_alloc(8, 1);
 	small_alloc(9, 1);
-	small_alloc(1024, 5);
+	small_alloc(1024, 6);
 
 	large_alloc();
 	

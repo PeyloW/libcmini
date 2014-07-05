@@ -98,9 +98,9 @@ ___real_alloc_small_chunks:
     ext.l %d0
 	move.l %a0,(%a1,%d0.l)
 #ifdef __mcoldfire__
-    subq.l  #2,%d2
+    subq.l  #3,%d2
 #else
-    subq.w  #2,%d2
+    subq.w  #3,%d2
 #endif
 .forloop2:
 #ifdef __mcoldfire__
@@ -117,6 +117,14 @@ ___real_alloc_small_chunks:
 #else
     dbra  %d2,.forloop2
 #endif
+#ifdef __mcoldfire__
+    lea (%a0,%d1.l),%a1
+#else
+    lea (%a0,%d1.w),%a1
+#endif
+    clr.l (%a0)+
+    move.l %d0,(%a0)
+    move.l %a1,%a0
     clr.l (%a0)
     move.l %d0,4(%a0)
 .nomem:
@@ -128,7 +136,7 @@ ___real_alloc_small_chunks:
 	.even
 	.globl	_malloc
 _malloc:
-    illegal
+|    illegal
 #ifndef __FASTCALL__
     move.l 4(%sp),%d0
 #endif
@@ -195,7 +203,7 @@ _malloc:
 	.even
 	.globl	_free
 _free:
-    illegal
+|    illegal
 #ifndef __FASTCALL__
     move.l 4(%sp),a0
 #endif
@@ -224,7 +232,7 @@ _free:
 	.even
 	.globl	_malloc_size
 _malloc_size:
-    illegal
+|    illegal
 #ifndef __FASTCALL__
     move.l 4(%sp),a0
 #endif
