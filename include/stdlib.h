@@ -41,6 +41,8 @@ extern unsigned long strtoul(const char*, char**, int);
 extern long long strtoll(const char*, char**, int);
 extern unsigned long long strtoull(const char*, char**, int);
 
+extern void *bsearch(const void *key, const void *base, size_t nel, size_t width, int (*compar) (const void *, const void *));
+extern void qsort(void *base, unsigned num, unsigned width, int (*comp)(const void *, const void *));
 
 #define NULL	((void *) 0)
 #endif /* _STDLIB_H_ */
