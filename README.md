@@ -24,7 +24,7 @@ GCC passes all arguments on the stack by default. The Atari ST, and even the Fal
 As a result memory operations are very expensive. Most functions take only a few arguments that can be passed in registers.
 
 -mfastcall uses d0-2/a0-1/fp0-2 for passing integer and pointer arguments when possible, and always return pointers in a0.
-a2 is not used for passing arguments, but is considered clobbered, this allows a2 to be used faster calling of function pointers.
+a2 is not used for passing arguments, but is considered clobbered, this allows a2 to be used as call target function pointer.
 
 The result is faster code execution, and slightly smaller memory footprint. Especially when used in combination with -mshort to 
 avoid library calls for most integer operations.

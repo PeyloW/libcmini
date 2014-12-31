@@ -56,8 +56,7 @@ ASRCS= \
 	$(SRCDIR)/setstack.S\
 	$(SRCDIR)/checkcpu.S\
 	$(SRCDIR)/getcookie.S\
-	$(SRCDIR)/getsysvar.S\
-	$(SRCDIR)/malloca.S
+	$(SRCDIR)/getsysvar.S
 
 SRCDIR=sources
 ifeq ($(ONLY_68K),Y)
